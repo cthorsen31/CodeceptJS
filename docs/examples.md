@@ -33,6 +33,14 @@ This repository demonstrates usage of:
 * testing WYSIWYG editor
 * GitLab CI
 
+## [Quick Start with Cucumber/Gherkin](https://github.com/gkushang/codeceptjs-quick-start)
+
+This repository demonstrates the CodeceptJS with Cucumber/Gherkin configuration
+
+* Easy 3-Steps process to colocate the CodeceptJS with Gherkin tests with your project
+* Quick Start with CodeceptJS wih Cucumber/Gherkin
+* Sample example and feature files to test GitHub Features
+
 ## [Amazon Tests v2](https://gitlab.com/thanhnguyendh/codeceptjs-wdio-services)
 
 Testing Amazon website using Selenium WebDriver.
@@ -93,3 +101,11 @@ This repository demonstrates usage of
 This repository demonstrates usage of
 
 * REST helper
+
+## [Automation Starter](https://github.com/sjorrillo/automation-starter)
+
+The purpose of this application is for learning the basics and how to use good practices and useful tools in automation.
+
+* Puppeteer helper
+* Working with gherkin, also it has type definitions and to be able to use them inside when, given and then make sure you add `declare function inject(): { I: CodeceptJS.I, [key: string]: any; };`in the `steps.d.ts`file 
+* Linting `airbnb-base`, `codeceptjs/codeceptjs` and full ES6 support

@@ -2,6 +2,7 @@ const TestHelper = require('../support/TestHelper');
 const Puppeteer = require('../../lib/helper/Puppeteer');
 const puppeteer = require('puppeteer');
 const should = require('chai').should();
+const expect = require('chai').expect;
 const assert = require('assert');
 const path = require('path');
 const fs = require('fs');
@@ -70,6 +71,17 @@ describe('Puppeteer', function () {
       await I.amOnPage(siteUrl);
       const url = await page.url();
       return url.should.eql(`${siteUrl}/`);
+    });
+  });
+
+  describe('grabDataFromPerformanceTiming', () => {
+    it('should return data from performance timing', async () => {
+      await I.amOnPage('/');
+      const res = await I.grabDataFromPerformanceTiming();
+      expect(res).to.have.property('responseEnd');
+      expect(res).to.have.property('domInteractive');
+      expect(res).to.have.property('domContentLoadedEventEnd');
+      expect(res).to.have.property('loadEventEnd');
     });
   });
 
@@ -574,47 +586,22 @@ describe('Puppeteer', function () {
     });
   });
 
-  describe('#downloadFile', () => {
+  describe('#handleDownloads', () => {
     before(() => {
       // create download folder;
-      fs.mkdir(path.join(`${__dirname}/../data/download`), () => {
-
-      });
-      global.output_dir = path.join(`${__dirname}/../data/download`);
+      global.output_dir = path.join(`${__dirname}/../data/output`);
 
       FS = new FileSystem();
       FS._before();
-      FS.amInPath('download');
+      FS.amInPath('output');
     });
-
-    after(() => {
-      // Remove the test dir
-      fs.readdir(global.output_dir, (err, files) => {
-        if (err) throw err;
-
-        for (const file of files) {
-          if (file.includes('.mp4')) {
-            fs.unlink(path.join(global.output_dir, file), (err) => {
-              if (err) throw err;
-            });
-          }
-        }
-      });
-    });
-
 
     it('should dowload file', async () => {
-      await I.amOnPage('http://file-examples.com/index.php/sample-video-files/sample-mp4-files/');
-      const fileName = await I.downloadFile('td[class="text-right file-link"] a');
-
-      FS.seeFile(fileName);
-    });
-
-    it('should dowload file with custom name', async () => {
-      await I.amOnPage('http://file-examples.com/index.php/sample-video-files/sample-mp4-files/');
-      const fileName = await I.downloadFile('td[class="text-right file-link"] a', 'thisisacustomname');
-
-      FS.seeFile(fileName);
+      await I.amOnPage('/form/download');
+      await I.handleDownloads();
+      await I.click('Download file');
+      await I.wait(5);
+      await FS.seeFile('downloads/avatar.jpg');
     });
   });
 });

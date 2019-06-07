@@ -6,14 +6,63 @@
  */
 class RoboFile extends \Robo\Tasks
 {
-    function docs()
+
+    function docs() {
+        $this->docsHelpers();
+        $this->docsPlugins();
+    }
+
+    function docsPlugins() {
+        $this->_exec("npx documentation build lib/plugin/*.js -o docs/plugins.md -f md --shallow --markdown-toc=false --sort-order=alpha ");
+    }
+
+    function docsHelpers()
     {
-        $this->taskGulpRun('docs')
-          ->run();
-        $this->taskGitStack()
-          ->add('docs')
-          ->commit('updated docs')
-          ->run();
+        $files = scandir('lib/helper');
+
+        $partials = array_slice(scandir('docs/webapi'), 2);
+        $placeholders = array_map(function($p) { $p = str_replace('.mustache', '', $p); return "{{> $p }}"; }, $partials);
+        $templates = array_map(function($p) { return trim(substr(preg_replace('~^~m', "   * " , file_get_contents("docs/webapi/$p")), 5)) . "\n   * {--end--}"; }, $partials);
+
+        $sharedPartials = array_slice(scandir('docs/shared'), 2);
+        $sharedPlaceholders = array_map(function($p) { $p = str_replace('.mustache', '', $p); return "{{ $p }}"; }, $sharedPartials);
+        $sharedTemplates = array_map(function($p) { return "\n\n\n" . file_get_contents("docs/shared/$p"); }, $sharedPartials);
+
+
+        foreach ($files as $file) {
+            $info = pathinfo($file);
+            if (!isset($info['extension'])) continue;
+            if ($info['extension'] !== 'js') continue;
+
+            $this->_copy("lib/helper/$file", "docs/build/$file");
+
+            $this->taskReplaceInFile("docs/build/$file")
+                ->from($placeholders)
+                ->to($templates)
+                ->run();
+
+            $this->_exec("npx documentation build docs/build/{$info['basename']} -o docs/helpers/{$info['filename']}.md -f md --shallow --markdown-toc=false --sort-order=alpha ");
+
+            // removing badly formatted documentation.js shit
+            $this->taskReplaceInFile("docs/helpers/{$info['filename']}.md")
+                ->regex(['{{--end--}}','~\(optional, default.*?\)~','~\\*~'])
+                ->to(["\n",'',''])
+                ->run();
+
+            $this->taskReplaceInFile("docs/helpers/{$info['filename']}.md")
+                ->from($sharedPlaceholders)
+                ->to($sharedTemplates)
+                ->run();
+
+            $this->taskWriteToFile("docs/helpers/{$info['filename']}.md")
+                ->line('-----')
+                ->line("id: {$info['filename']}")
+                ->line("title: {$info['filename']}")
+                ->line('----')
+                ->line('')
+                ->textFromFile("docs/helpers/{$info['filename']}.md")
+                ->run();
+        }
     }
 
     function publishSite()
@@ -48,25 +97,47 @@ class RoboFile extends \Robo\Tasks
             ->run();
 
         $this->taskWriteToFile('docs/community-helpers.md')
-        ->line('---')
-        ->line('id: community-helpers')
-        ->line('title: Community Helpers')
-        ->line('---')
-        ->line('')
-        ->line('> Share your helpers at our [Wiki Page](https://github.com/Codeception/CodeceptJS/wiki/Community-Helpers)')
-        ->line('')
-        ->textFromFile('website/wiki/Community-Helpers.md')
-        ->run();
+            ->line('---')
+            ->line('id: community-helpers')
+            ->line('title: Community Helpers')
+            ->line('---')
+            ->line('')
+            ->line('> Share your helpers at our [Wiki Page](https://github.com/Codeception/CodeceptJS/wiki/Community-Helpers)')
+            ->line('')
+            ->textFromFile('website/wiki/Community-Helpers.md')
+            ->run();
 
         $this->taskWriteToFile('docs/examples.md')
-        ->line('---')
-        ->line('id: examples')
-        ->line('title: Examples')
-        ->line('---')
-        ->line('')
-        ->line('> Add your own examples to our [Wiki Page](https://github.com/Codeception/CodeceptJS/wiki/Examples)')
-        ->textFromFile('website/wiki/Examples.md')
-        ->run();
+            ->line('---')
+            ->line('id: examples')
+            ->line('title: Examples')
+            ->line('---')
+            ->line('')
+            ->line('> Add your own examples to our [Wiki Page](https://github.com/Codeception/CodeceptJS/wiki/Examples)')
+            ->textFromFile('website/wiki/Examples.md')
+            ->run();
+
+        $this->taskWriteToFile('docs/books.md')
+            ->line('---')
+            ->line('id: books')
+            ->line('title: Books & Posts')
+            ->line('---')
+            ->line('')
+            ->line('> Add your own books or posts to our [Wiki Page](https://github.com/Codeception/CodeceptJS/wiki/Books-&-Posts)')
+            ->textFromFile('website/wiki/Books-&-Posts.md')
+            ->run();
+
+        $this->taskWriteToFile('docs/videos.md')
+            ->line('---')
+            ->line('id: videos')
+            ->line('title: Videos')
+            ->line('---')
+            ->line('')
+            ->line('> Add your own videos to our [Wiki Page](https://github.com/Codeception/CodeceptJS/wiki/Videos)')
+            ->textFromFile('website/wiki/Videos.md')
+            ->run();
+
+
     }
 
     function testServer()
